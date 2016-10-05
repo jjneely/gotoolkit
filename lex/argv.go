@@ -6,9 +6,8 @@ import (
 )
 
 // State 0: No quote
-// State 1: Token break (whitespace)
-// State 2: backslash
-// State 3: In Quote
+// State 1: backslash
+// State 2: In Quote
 
 func Tokenize(s string) ([]string, error) {
 	var (
@@ -32,14 +31,14 @@ func Tokenize(s string) ([]string, error) {
 			case unicode.IsSpace(c):
 				chunk()
 			case c == '\\':
-				state = 2
+				state = 1
 			case c == '\'' || c == '"':
-				state = 3
+				state = 2
 				quote = c
 			default:
 				token = append(token, c)
 			}
-		case 2:
+		case 1:
 			switch {
 			case unicode.IsSpace(c):
 				fallthrough
@@ -54,12 +53,12 @@ func Tokenize(s string) ([]string, error) {
 			if quote == '\x00' {
 				state = 0
 			} else {
-				state = 3
+				state = 2
 			}
-		case 3:
+		case 2:
 			switch c {
 			case '\\':
-				state = 2
+				state = 1
 			case quote:
 				chunk()
 				quote = '\x00'
@@ -72,9 +71,9 @@ func Tokenize(s string) ([]string, error) {
 
 	// End of String
 	switch state {
-	case 2:
+	case 1:
 		token = append(token, '\\')
-	case 3:
+	case 2:
 		return nil, fmt.Errorf("Missing closing quote")
 	}
 

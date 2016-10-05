@@ -9,6 +9,10 @@ import (
 // State 1: backslash
 // State 2: In Quote
 
+// Tokenize splits string s around each instance of one or more white space
+// characters.  Unlike strings.Fields() it supports the use of shell-like
+// quoting or tokenization to allow the returned substrings to contain white
+// space.
 func Tokenize(s string) ([]string, error) {
 	var (
 		result []string

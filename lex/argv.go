@@ -2,55 +2,8 @@ package lex
 
 import (
 	"fmt"
-	"strings"
 	"unicode"
-	"unicode/utf8"
 )
-
-type Lexer struct {
-	Str string
-	Pos int
-}
-
-func NewLexer(s string) *Lexer {
-	l := new(Lexer)
-	l.Str = s
-	return l
-}
-
-func (l *Lexer) Position() int {
-	return l.Pos
-}
-
-func (l *Lexer) Len() int {
-	return len(l.Str)
-}
-
-func (l *Lexer) Next() rune {
-	if l.Pos >= len(l.Str) {
-		return '\x00'
-	}
-	runeValue, width := utf8.DecodeRuneInString(l.Str[l.Pos:])
-	l.Pos += width
-
-	return runeValue
-}
-
-func (l *Lexer) Peek() rune {
-	if l.Pos >= len(l.Str) {
-		return '\x00'
-	}
-
-	runeValue, _ := utf8.DecodeRuneInString(l.Str[l.Pos:])
-	return runeValue
-}
-
-func (l *Lexer) Rewind() {
-	// XXX: we need to rewind whatever the length of the last rune was
-	if l.Pos > 0 {
-		l.Pos--
-	}
-}
 
 // State 0: No quote
 // State 1: Token break (whitespace)
@@ -58,19 +11,21 @@ func (l *Lexer) Rewind() {
 // State 3: In Quote
 
 func Tokenize(s string) ([]string, error) {
-	result := make([]string, 0)
-	token := make([]rune, 0)
-	state := 0
-	quote := '\x00'
+	var (
+		result []string
+		token  []rune
+		state  int
+		quote  rune
+	)
 
 	chunk := func() {
 		if len(token) > 0 {
 			result = append(result, string(token))
-			token = token[0:-1] // zero length slice
+			token = nil // zero length slice
 		}
 	}
 
-	for c := range s {
+	for _, c := range s {
 		switch state {
 		case 0:
 			switch {
@@ -86,11 +41,11 @@ func Tokenize(s string) ([]string, error) {
 			}
 		case 2:
 			switch {
-			case unicode.IsSpace(c) && quote == '\x00':
-				token = append(token, c)
-			case c == '\'' && quote == '\'':
-				token = append(token, c)
-			case c == '"' && quote == '"':
+			case unicode.IsSpace(c):
+				fallthrough
+			case c == '\'':
+				fallthrough
+			case c == '"':
 				token = append(token, c)
 			default:
 				token = append(token, '\\')
